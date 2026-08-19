@@ -1,0 +1,69 @@
+name: Build RePythonNET-MCP release bundle
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - repythonnet-mcp/Dockerfile
+      - repythonnet-mcp/run.sh
+      - .github/workflows/build-repythonnet-mcp.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repythonnet-mcp-release
+  cancel-in-progress: true
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build self-contained image
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            --tag repythonnet-mcp:latest \
+            --file repythonnet-mcp/Dockerfile \
+            repythonnet-mcp
+
+      - name: Create importable bundle
+        run: |
+          mkdir -p dist/bundle
+          docker save \
+            --output dist/bundle/repythonnet-mcp-image-amd64.tar \
+            repythonnet-mcp:latest
+          cp repythonnet-mcp/run.sh dist/bundle/run.sh
+          chmod +x dist/bundle/run.sh
+          tar -C dist/bundle -czf dist/repythonnet-mcp-bundle-amd64.tar.gz \
+            repythonnet-mcp-image-amd64.tar run.sh
+          sha256sum dist/repythonnet-mcp-bundle-amd64.tar.gz \
+            > dist/repythonnet-mcp-bundle-amd64.tar.gz.sha256
+
+      - name: Publish downloadable release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: repythonnet-mcp-latest
+          name: RePythonNET-MCP latest
+          body: |
+            Prebuilt, self-contained linux/amd64 Docker image.
+
+            Download the bundle and run:
+
+            ```bash
+            tar -xzf repythonnet-mcp-bundle-amd64.tar.gz
+            ./run.sh
+            ```
+
+            Only Docker is required. The image is pinned to upstream commit
+            1056cfd480ab3ff344bee2bf023b2e7a9ae4e3fa.
+          make_latest: true
+          overwrite_files: true
+          files: |
+            dist/repythonnet-mcp-bundle-amd64.tar.gz
+            dist/repythonnet-mcp-bundle-amd64.tar.gz.sha256

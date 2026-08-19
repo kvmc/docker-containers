@@ -1,0 +1,16 @@
+services:
+  repythonnet-mcp:
+    build:
+      context: .
+      args:
+        REPYTHONNET_COMMIT: ${REPYTHONNET_COMMIT:-1056cfd480ab3ff344bee2bf023b2e7a9ae4e3fa}
+    image: ${REPYTHONNET_IMAGE:-repythonnet-mcp:latest}
+    container_name: repythonnet-mcp
+    ports:
+      - "${REPYTHONNET_PORT:-8001}:8001"
+    volumes:
+      - repythonnet-data:/data
+    restart: unless-stopped
+
+volumes:
+  repythonnet-data:

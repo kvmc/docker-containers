@@ -1,0 +1,5 @@
+README.md
+compose.yml
+.env
+*.tar
+*.tar.gz
